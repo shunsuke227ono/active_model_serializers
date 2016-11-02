@@ -92,10 +92,9 @@ module ActiveModel
     #   3. nil
     def self.get_serializer_for(klass, version: nil)
       return nil unless config.serializer_lookup_enabled
-      serializers_cache.fetch_or_store(klass, version: version) do
-
+      serializers_cache.fetch_or_store(klass) do # TODO: class と versionの組み合わせでキャッシュ
         version.downto(1).each do |v|
-          serializer_class = serializer_lookup_chain_for(klass).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
+          serializer_class = serializer_lookup_chain_for(klass, version: version).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
           break if serializer_class
         end
 
