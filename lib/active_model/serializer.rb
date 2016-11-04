@@ -99,7 +99,6 @@ module ActiveModel
       return nil unless config.serializer_lookup_enabled
       serializers_cache.fetch_or_store(klass) do # TODO: class と versionの組み合わせでキャッシュ
         if version
-          binding.pry
           serializer_class = serializer_class_with_version(klass, version)
         else
           serializer_class = serializer_lookup_chain_for(klass).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }

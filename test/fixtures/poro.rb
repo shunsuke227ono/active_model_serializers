@@ -289,6 +289,7 @@ end
 
 module V2
   class ModelWithVersionSerializer < ActiveModel::Serializer
+    attributes :id, :name
   end
 end
 

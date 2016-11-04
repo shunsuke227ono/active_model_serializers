@@ -10,6 +10,11 @@ module ActionController
           render json: @profile
         end
 
+        def render_using_implicit_serializer_with_version
+          @m = ModelWithVersion.new(id: 1, name: 'Name 1')
+          render json: @m, version: 4
+        end
+
         def render_using_default_adapter_root
           @profile = Profile.new(name: 'Name 1', description: 'Description 1', comments: 'Comments 1')
           render json: @profile
@@ -151,6 +156,18 @@ module ActionController
         expected = {
           name: 'Name 1',
           description: 'Description 1'
+        }
+
+        assert_equal 'application/json', @response.content_type
+        assert_equal expected.to_json, @response.body
+      end
+
+      def test_render_using_implicit_serializer_with_version
+        get :render_using_implicit_serializer_with_version
+
+        expected = {
+            id: 1,
+            name: 'Name 1'
         }
 
         assert_equal 'application/json', @response.content_type
