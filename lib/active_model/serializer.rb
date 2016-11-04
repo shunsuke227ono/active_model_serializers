@@ -97,7 +97,8 @@ module ActiveModel
     #   3. nil
     def self.get_serializer_for(klass, version: nil)
       return nil unless config.serializer_lookup_enabled
-      serializers_cache.fetch_or_store(klass) do # TODO: class と versionの組み合わせでキャッシュ
+      cache_key = [klass, version]
+      serializers_cache.fetch_or_store(cache_key) do
         if version
           serializer_class = serializer_class_with_version(klass, version)
         else
