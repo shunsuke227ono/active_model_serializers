@@ -55,6 +55,7 @@ module ActiveModel
           @custom_profile = CustomProfile.new
           @model = ::Model.new
           @tweet = Tweet.new
+          @model_with_version = ModelWithVersion.new
         end
 
         def test_serializer_for_non_ams_serializer
@@ -65,6 +66,11 @@ module ActiveModel
         def test_serializer_for_existing_serializer
           serializer = ActiveModel::Serializer.serializer_for(@profile)
           assert_equal ProfileSerializer, serializer
+        end
+
+        def test_serializer_for_existing_serializer_with_version
+          serializer = ActiveModel::Serializer.serializer_for(@model_with_version, version: 4)
+          assert_equal V2::ModelWithVersionSerializer, serializer
         end
 
         def test_serializer_for_existing_serializer_with_lookup_disabled

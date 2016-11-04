@@ -283,4 +283,13 @@ module Spam
     attributes :id
   end
 end
+
+class ModelWithVersion < Model
+end
+
+module V2
+  class ModelWithVersionSerializer < ActiveModel::Serializer
+  end
+end
+
 $VERBOSE = verbose

@@ -64,15 +64,20 @@ module ActiveModel
 
       resource_class_name = klass.name.demodulize
       resource_namespace = klass.name.deconstantize
+      serializer_class_name = "#{resource_class_name}Serializer"
 
       # NOTE: versionはnamespace的にtopに来るという規約にする。
       if version
         version_namespace = "V#{version}"
-        chain.push("#{name}::#{version_namespace}::#{resource_class_name}") if self != ActiveModel::Serializer
-        chain.push("#{version_namespace}::#{resource_namespace}::#{resource_class_name}")
+        chain.push("#{name}::#{version_namespace}::#{serializer_class_name}") if self != ActiveModel::Serializer
+        if resource_namespace.present?
+          chain.push("#{version_namespace}::#{resource_namespace}::#{serializer_class_name}")
+        else
+          chain.push("#{version_namespace}::#{serializer_class_name}")
+        end
       else
-        chain.push("#{name}::#{resource_class_name}") if self != ActiveModel::Serializer
-        chain.push("#{resource_namespace}::#{resource_class_name}")
+        chain.push("#{name}::#{serializer_class_name}") if self != ActiveModel::Serializer
+        chain.push("#{resource_namespace}::#{serializer_class_name}")
       end
 
       chain
@@ -93,9 +98,11 @@ module ActiveModel
     def self.get_serializer_for(klass, version: nil)
       return nil unless config.serializer_lookup_enabled
       serializers_cache.fetch_or_store(klass) do # TODO: class と versionの組み合わせでキャッシュ
-        version.downto(1).each do |v|
-          serializer_class = serializer_lookup_chain_for(klass, version: version).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
-          break if serializer_class
+        if version
+          binding.pry
+          serializer_class = serializer_class_with_version(klass, version)
+        else
+          serializer_class = serializer_lookup_chain_for(klass).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
         end
 
         if serializer_class
@@ -104,6 +111,14 @@ module ActiveModel
           get_serializer_for(klass.superclass)
         end
       end
+    end
+
+    def self.serializer_class_with_version(klass, version)
+      version.downto(1).find do |v|
+        serializer_class = serializer_lookup_chain_for(klass, version: v).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
+        return serializer_class if serializer_class
+      end
+      nil
     end
 
     # @api private
