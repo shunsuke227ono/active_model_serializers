@@ -101,7 +101,7 @@ module ActiveModel
       serializers_cache.fetch_or_store(cache_key) do
         if version
           serializer_class = serializer_lookup_chain_for(klass, version: v).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
-          get_serializer_for(klass, version: version - 1) if serializer_class.nil? && version > 1
+          serializer_class ||= get_serializer_for(klass, version: version - 1) if version > 1
         else
           serializer_class = serializer_lookup_chain_for(klass).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
         end
