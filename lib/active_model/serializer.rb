@@ -68,11 +68,11 @@ module ActiveModel
       # NOTE: versionはnamespace的にtopに来るという規約にする。
       if version
         version_namespace = "V#{version}"
-        chain.push("#{name}::#{version_namespace}::#{serializer_class_name}") if self != ActiveModel::Serializer
-        chain.push("#{version_namespace}::#{resource_namespace}::#{serializer_class_name}")
+        chain.push("#{name}::#{version_namespace}::#{resource_class_name}") if self != ActiveModel::Serializer
+        chain.push("#{version_namespace}::#{resource_namespace}::#{resource_class_name}")
       else
-        chain.push("#{name}::#{serializer_class_name}") if self != ActiveModel::Serializer
-        chain.push("#{resource_namespace}::#{serializer_class_name}")
+        chain.push("#{name}::#{resource_class_name}") if self != ActiveModel::Serializer
+        chain.push("#{resource_namespace}::#{resource_class_name}")
       end
 
       chain
