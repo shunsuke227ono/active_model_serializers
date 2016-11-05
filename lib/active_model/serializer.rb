@@ -39,9 +39,9 @@ module ActiveModel
     #   3. options[:serializer]
     #   4. lookup serializer when resource is a Class
     def self.serializer_for(resource, options = {})
-      if resource.respond_to?(:serializer_class) # NOTE: 自分でmodelにserializer_classを定義してる場合か
+      if resource.respond_to?(:serializer_class)
         resource.serializer_class
-      elsif resource.respond_to?(:to_ary) # NOTE: 自分でmodelにto_aryを定義してる場合か
+      elsif resource.respond_to?(:to_ary)
         config.collection_serializer
       else
         options.fetch(:serializer) { get_serializer_for(resource.class, version: options[:version]) }
@@ -66,21 +66,24 @@ module ActiveModel
       resource_namespace = klass.name.deconstantize
       serializer_class_name = "#{resource_class_name}Serializer"
 
-      # NOTE: versionはnamespace的にtopに来るという規約にする。
       if version
         version_namespace = "V#{version}"
-        chain.push("#{name}::#{version_namespace}::#{serializer_class_name}") if self != ActiveModel::Serializer
+        chain.push([name, version_namespace], serializer_class_name) if self != ActiveModel::Serializer
         if resource_namespace.present?
-          chain.push("#{version_namespace}::#{resource_namespace}::#{serializer_class_name}")
+          chain.push(construct_class_name([version_namespace, resource_namespace], serializer_class_name))
         else
-          chain.push("#{version_namespace}::#{serializer_class_name}")
+          chain.push(construct_class_name([version_namespace], serializer_class_name))
         end
       else
-        chain.push("#{name}::#{serializer_class_name}") if self != ActiveModel::Serializer
-        chain.push("#{resource_namespace}::#{serializer_class_name}")
+        chain.push(construct_class_name([name], serializer_class_name)) if self != ActiveModel::Serializer
+        chain.push(construct_class_name([resource_namespace], serializer_class_name))
       end
 
       chain
+    end
+
+    def self.construct_class_name(namespaces, serializer_class_name)
+      namespaces.join('::') + '::' + serializer_class_name
     end
 
     # Used to cache serializer name => serializer class
@@ -99,12 +102,8 @@ module ActiveModel
       return nil unless config.serializer_lookup_enabled
       cache_key = [klass, version]
       serializers_cache.fetch_or_store(cache_key) do
-        if version
-          serializer_class = serializer_lookup_chain_for(klass, version: v).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
-          serializer_class ||= get_serializer_for(klass, version: version - 1) if version > 1
-        else
-          serializer_class = serializer_lookup_chain_for(klass).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
-        end
+        serializer_class = serializer_lookup_chain_for(klass, version: version).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
+        serializer_class ||= get_serializer_for(klass, version: version - 1) if version.present? && version > 1
 
         if serializer_class
           serializer_class
