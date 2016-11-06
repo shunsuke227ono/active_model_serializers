@@ -284,12 +284,25 @@ module Spam
   end
 end
 
-class ModelWithVersion < Model
+class Apple < Model
 end
 
-module V2
-  class ModelWithVersionSerializer < ActiveModel::Serializer
-    attributes :id, :name
+class MyApple < Apple
+end
+
+class CustomApple
+  def serializer_class_name
+    "AppleSerializer"
+  end
+end
+
+module V1
+  class AppleSerializer < ActiveModel::Serializer
+  end
+end
+
+module V5
+  class AppleSerializer < ActiveModel::Serializer
   end
 end
 

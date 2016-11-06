@@ -43,6 +43,10 @@ module ActiveModel
         resource.serializer_class
       elsif resource.respond_to?(:to_ary)
         config.collection_serializer
+      elsif resource.respond_to?(:serializer_class_name)
+        options.fetch(:serializer) { serializer_from_name(resource.serializer_class_name, version: options[:version]) }
+      elsif options[:serializer_name]
+        options.fetch(:serializer) { serializer_from_name(options[:serializer_name], version: options[:version]) }
       else
         options.fetch(:serializer) { get_serializer_for(resource.class, version: options[:version]) }
       end
@@ -56,6 +60,20 @@ module ActiveModel
     class << self
       extend ActiveModelSerializers::Deprecate
       deprecate :adapter, 'ActiveModelSerializers::Adapter.configured_adapter'
+    end
+
+    def self.serializer_from_name(serializer_name, version: nil)
+      if version
+        serializer_class = ("V#{version}::" + serializer_name).safe_constantize
+      else
+        serializer_class = serializer_name.safe_constantize
+      end
+
+      if serializer_class && serializer_class < ActiveModel::Serializer
+        serializer_class
+      else
+        serializer_from_name(serializer_name, version: version - 1) if version && version > 1
+      end
     end
 
     # @api private
@@ -101,7 +119,7 @@ module ActiveModel
         if serializer_class
           serializer_class
         elsif klass.superclass
-          get_serializer_for(klass.superclass)
+          get_serializer_for(klass.superclass, version: version)
         end
       end
     end
