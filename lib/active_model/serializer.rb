@@ -43,8 +43,12 @@ module ActiveModel
         resource.serializer_class
       elsif resource.respond_to?(:to_ary)
         config.collection_serializer
+      elsif resource.respond_to?(:serializer_class_name)
+        options.fetch(:serializer) { serializer_from_name(resource.serializer_class_name, version: options[:version]) }
+      elsif options[:serializer_name]
+        options.fetch(:serializer) { serializer_from_name(options[:serializer_name], version: options[:version]) }
       else
-        options.fetch(:serializer) { get_serializer_for(resource.class) }
+        options.fetch(:serializer) { get_serializer_for(resource.class, version: options[:version]) }
       end
     end
 
@@ -58,16 +62,36 @@ module ActiveModel
       deprecate :adapter, 'ActiveModelSerializers::Adapter.configured_adapter'
     end
 
+    def self.serializer_from_name(serializer_name, version: nil)
+      if version
+        serializer_class = ("V#{version}::" + serializer_name).safe_constantize
+      else
+        serializer_class = serializer_name.safe_constantize
+      end
+
+      if serializer_class && serializer_class < ActiveModel::Serializer
+        serializer_class
+      else
+        serializer_from_name(serializer_name, version: version - 1) if version && version > 1
+      end
+    end
+
     # @api private
-    def self.serializer_lookup_chain_for(klass)
+    def self.serializer_lookup_chain_for(klass, version: nil)
       chain = []
 
       resource_class_name = klass.name.demodulize
       resource_namespace = klass.name.deconstantize
       serializer_class_name = "#{resource_class_name}Serializer"
 
-      chain.push("#{name}::#{serializer_class_name}") if self != ActiveModel::Serializer
-      chain.push("#{resource_namespace}::#{serializer_class_name}")
+      if version
+        namespace = "V#{version}"
+        namespace += '::' + resource_namespace if resource_namespace.present?
+        chain.push("#{namespace}::#{serializer_class_name}")
+      else
+        chain.push("#{name}::#{serializer_class_name}") if self != ActiveModel::Serializer
+        chain.push("#{resource_namespace}::#{serializer_class_name}")
+      end
 
       chain
     end
@@ -81,19 +105,21 @@ module ActiveModel
     # @api private
     # Find a serializer from a class and caches the lookup.
     # Preferentially returns:
-    #   1. class name appended with "Serializer"
-    #   2. try again with superclass, if present
-    #   3. nil
-    def self.get_serializer_for(klass)
+    #   1. class name appended with "Serializer" and version if present
+    #   2. try again with lower version if present
+    #   3. try again with superclass, if present
+    #   4. nil
+    def self.get_serializer_for(klass, version: nil)
       return nil unless config.serializer_lookup_enabled
-      serializers_cache.fetch_or_store(klass) do
+      serializers_cache.fetch_or_store([klass, version]) do
         # NOTE(beauby): When we drop 1.9.3 support we can lazify the map for perfs.
-        serializer_class = serializer_lookup_chain_for(klass).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
+        serializer_class = serializer_lookup_chain_for(klass, version: version).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
+        serializer_class ||= get_serializer_for(klass, version: version - 1) if version && version > 1
 
         if serializer_class
           serializer_class
         elsif klass.superclass
-          get_serializer_for(klass.superclass)
+          get_serializer_for(klass.superclass, version: version)
         end
       end
     end

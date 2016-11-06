@@ -283,4 +283,27 @@ module Spam
     attributes :id
   end
 end
+
+class Apple < Model
+end
+
+class MyApple < Apple
+end
+
+class CustomApple
+  def serializer_class_name
+    "AppleSerializer"
+  end
+end
+
+module V1
+  class AppleSerializer < ActiveModel::Serializer
+  end
+end
+
+module V5
+  class AppleSerializer < ActiveModel::Serializer
+  end
+end
+
 $VERBOSE = verbose

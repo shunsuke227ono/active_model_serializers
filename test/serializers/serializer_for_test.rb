@@ -55,6 +55,9 @@ module ActiveModel
           @custom_profile = CustomProfile.new
           @model = ::Model.new
           @tweet = Tweet.new
+          @apple = Apple.new
+          @my_apple = MyApple.new
+          @custom_apple = CustomApple.new
         end
 
         def test_serializer_for_non_ams_serializer
@@ -65,6 +68,31 @@ module ActiveModel
         def test_serializer_for_existing_serializer
           serializer = ActiveModel::Serializer.serializer_for(@profile)
           assert_equal ProfileSerializer, serializer
+        end
+
+        def test_serializer_for_existing_versioning_serializer_with_version
+          serializer = ActiveModel::Serializer.serializer_for(@apple, version: 1)
+          assert_equal V1::AppleSerializer, serializer
+        end
+
+        def test_serializer_for_existing_versioning_serializer_with_version_and_serializer_name
+          serializer = ActiveModel::Serializer.serializer_for(@model, serializer_name: "AppleSerializer", version: 3)
+          assert_equal V1::AppleSerializer, serializer
+        end
+
+        def test_serializer_for_existing_versioning_serializer_with_later_version
+          serializer = ActiveModel::Serializer.serializer_for(@apple, version: 8)
+          assert_equal V5::AppleSerializer, serializer
+        end
+
+        def test_serializer_for_existing_versioning_serializer_without_version
+          serializer = ActiveModel::Serializer.serializer_for(@apple)
+          assert_equal nil, serializer
+        end
+
+        def test_serializer_for_existing_not_versioning_serializer_with_version
+          serializer = ActiveModel::Serializer.serializer_for(@profile, version: 1)
+          assert_equal nil, serializer
         end
 
         def test_serializer_for_existing_serializer_with_lookup_disabled
@@ -84,6 +112,16 @@ module ActiveModel
           assert_equal ProfileSerializer, serializer
         end
 
+        def test_serializer_inherited_versioning_serializer_with_version
+          serializer = ActiveModel::Serializer.serializer_for(@my_apple, version: 3)
+          assert_equal V1::AppleSerializer, serializer
+        end
+
+        def test_serializer_inherited_versioning_serializer_without_version
+          serializer = ActiveModel::Serializer.serializer_for(@my_apple)
+          assert_equal nil, serializer
+        end
+
         def test_serializer_inherited_serializer_with_lookup_disabled
           serializer = with_serializer_lookup_disabled do
             ActiveModel::Serializer.serializer_for(@my_profile)
@@ -94,6 +132,11 @@ module ActiveModel
         def test_serializer_custom_serializer
           serializer = ActiveModel::Serializer.serializer_for(@custom_profile)
           assert_equal ProfileSerializer, serializer
+        end
+
+        def test_serializer_for_custom_serializer_with_version
+          serializer = ActiveModel::Serializer.serializer_for(@custom_apple, version: 3)
+          assert_equal V1::AppleSerializer, serializer
         end
 
         def test_serializer_custom_serializer_with_lookup_disabled
