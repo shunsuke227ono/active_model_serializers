@@ -67,16 +67,12 @@ module ActiveModel
       serializer_class_name = "#{resource_class_name}Serializer"
 
       if version
-        version_namespace = "V#{version}"
-        chain.push([name, version_namespace], serializer_class_name) if self != ActiveModel::Serializer
-        if resource_namespace.present?
-          chain.push(construct_class_name([version_namespace, resource_namespace], serializer_class_name))
-        else
-          chain.push(construct_class_name([version_namespace], serializer_class_name))
-        end
+        namespace = "V#{version}"
+        namespace += '::' + resource_namespace if resource_namespace.present?
+        chain.push("#{namespace}::#{serializer_class_name}")
       else
-        chain.push(construct_class_name([name], serializer_class_name)) if self != ActiveModel::Serializer
-        chain.push(construct_class_name([resource_namespace], serializer_class_name))
+        chain.push("#{name}::#{serializer_class_name}") if self != ActiveModel::Serializer
+        chain.push("#{resource_namespace}::#{serializer_class_name}")
       end
 
       chain
