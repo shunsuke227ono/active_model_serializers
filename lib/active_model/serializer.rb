@@ -96,7 +96,7 @@ module ActiveModel
       serializers_cache.fetch_or_store([klass, version]) do
         # NOTE(beauby): When we drop 1.9.3 support we can lazify the map for perfs.
         serializer_class = serializer_lookup_chain_for(klass, version: version).map(&:safe_constantize).find { |x| x && x < ActiveModel::Serializer }
-        serializer_class ||= get_serializer_for(klass, version: version - 1) if version.present? && version > 1
+        serializer_class ||= get_serializer_for(klass, version: version - 1) if version && version > 1
 
         if serializer_class
           serializer_class
